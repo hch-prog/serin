@@ -48,6 +48,7 @@ model User {
   moodEntries   MoodEntry[]
   journalEntries JournalEntry[]
   settings      UserSettings?
+  goals         Goal[]
 }
 
 model UserLog {
@@ -102,4 +103,36 @@ model UserSettings {
   monthlyGoal     Int      @default(10)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model Goal {
+  id          String    @id @default(cuid())
+  title       String
+  description String?   @db.Text
+  category    String    // e.g., "Personal", "Health", "Career"
+  status      String    // "In Progress", "Completed", "On Hold"
+  priority    String    // "High", "Medium", "Low"
+  dueDate     DateTime?
+  progress    Int       @default(0) // 0-100
+  milestones  Milestone[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model Milestone {
+  id          String    @id @default(cuid())
+  title       String
+  isCompleted Boolean   @default(false)
+  dueDate     DateTime?
+  goalId      String
+  goal        Goal      @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([goalId])
 }
