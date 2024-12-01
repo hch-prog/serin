@@ -43,14 +43,23 @@ import { useSession } from "next-auth/react"
 import { redirect } from "next/navigation"
 import { Sidebar } from "@/components/common/sidebar";
 import { startOfMonth, endOfMonth, isToday, isSameDay, format } from 'date-fns'
-import { MoodEntry } from "@prisma/client";
+import { Input } from "@/components/ui/input";
 
 // Enhanced mood tracking with timestamps and notes
 
-const QuickMoodCard = ({ onMoodSubmit }: { onMoodSubmit: (data: { mood: number, activities: string[], note: string }) => void }) => {
+const QuickJournalCard = ({ onJournalSubmit }: { 
+  onJournalSubmit: (data: { 
+    title: string, 
+    content: string, 
+    mood: number, 
+    tags: string[], 
+    category: string 
+  }) => Promise<void> 
+}) => {
   const [selectedMood, setSelectedMood] = useState<number | null>(null);
-  const [activities, setActivities] = useState<string[]>([]);
-  const [note, setNote] = useState<string>("");
+  const [title, setTitle] = useState<string>("");
+  const [content, setContent] = useState<string>("");
+  const [tags, setTags] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const moodOptions = [
@@ -86,7 +95,7 @@ const QuickMoodCard = ({ onMoodSubmit }: { onMoodSubmit: (data: { mood: number, 
     },
   ];
 
-  const activityOptions = [
+  const tagOptions = [
     { icon: <Sun className="w-4 h-4" />, label: "Work" },
     { icon: <Heart className="w-4 h-4" />, label: "Exercise" },
     { icon: <Star className="w-4 h-4" />, label: "Family" },
@@ -98,23 +107,25 @@ const QuickMoodCard = ({ onMoodSubmit }: { onMoodSubmit: (data: { mood: number, 
   ];
 
   const handleSubmit = async () => {
-    if (!selectedMood) return;
+    if (!selectedMood || !title.trim() || !content.trim()) return;
 
     setIsSubmitting(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      onMoodSubmit({
+      await onJournalSubmit({
+        title,
+        content,
         mood: selectedMood,
-        activities,
-        note,
+        tags,
+        category: "Quick Entry"
       });
 
       // Reset form
       setSelectedMood(null);
-      setActivities([]);
-      setNote("");
+      setTitle("");
+      setContent("");
+      setTags([]);
+    } catch (error) {
+      console.error('Error submitting journal:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -124,79 +135,99 @@ const QuickMoodCard = ({ onMoodSubmit }: { onMoodSubmit: (data: { mood: number, 
     <Card>
       <CardHeader>
         <CardTitle className="font-medium text-lg">
-          How are you feeling?
+          Quick Journal Entry
         </CardTitle>
-        <CardDescription>Track your mood and activities</CardDescription>
+        <CardDescription>Capture your thoughts and feelings</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="gap-3 grid grid-cols-5">
-          {moodOptions.map((mood) => (
-            <motion.button
-              key={mood.value}
-              className={`${mood.color
-                } p-4 rounded-xl flex flex-col items-center gap-2
-                ${selectedMood === mood.value ? "ring-2 ring-indigo-600" : ""}`}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setSelectedMood(mood.value)}
-            >
-              <span className="text-3xl">{mood.emoji}</span>
-              <span className="font-medium text-xs">{mood.label}</span>
-            </motion.button>
-          ))}
-        </div>
-
+        {/* Title Input */}
         <div>
           <label className="block mb-2 font-medium text-slate-700 text-sm">
-            Activities
+            Title
+          </label>
+          <Input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Give your entry a title..."
+            className="border-slate-200"
+          />
+        </div>
+
+        {/* Mood Selection */}
+        <div>
+          <label className="block mb-2 font-medium text-slate-700 text-sm">
+            How are you feeling?
+          </label>
+          <div className="gap-3 grid grid-cols-5">
+            {moodOptions.map((mood) => (
+              <motion.button
+                key={mood.value}
+                className={`${mood.color} p-4 rounded-xl flex flex-col items-center gap-2
+                  ${selectedMood === mood.value ? "ring-2 ring-indigo-600" : ""}`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setSelectedMood(mood.value)}
+              >
+                <span className="text-3xl">{mood.emoji}</span>
+                <span className="font-medium text-xs">{mood.label}</span>
+              </motion.button>
+            ))}
+          </div>
+        </div>
+
+        {/* Content/Notes */}
+        <div>
+          <label className="block mb-2 font-medium text-slate-700 text-sm">
+            What's on your mind?
+          </label>
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            className="border-slate-200 p-3 border rounded-lg w-full text-sm"
+            rows={3}
+            placeholder="Write your thoughts here..."
+          />
+        </div>
+
+        {/* Tags */}
+        <div>
+          <label className="block mb-2 font-medium text-slate-700 text-sm">
+            Add Tags
           </label>
           <div className="flex flex-wrap gap-2">
-            {activityOptions.map((activity) => (
+            {tagOptions.map((tag) => (
               <button
-                key={activity.label}
+                key={tag.label}
                 onClick={() => {
-                  setActivities((prev) =>
-                    prev.includes(activity.label)
-                      ? prev.filter((a) => a !== activity.label)
-                      : [...prev, activity.label]
+                  setTags((prev) =>
+                    prev.includes(tag.label)
+                      ? prev.filter((t) => t !== tag.label)
+                      : [...prev, tag.label]
                   );
                 }}
                 className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors
-                  ${activities.includes(activity.label)
+                  ${tags.includes(tag.label)
                     ? "bg-indigo-100 text-indigo-700"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                   }`}
               >
-                {activity.icon}
-                {activity.label}
+                {tag.icon}
+                {tag.label}
               </button>
             ))}
           </div>
         </div>
 
-        <div>
-          <label className="block mb-2 font-medium text-slate-700 text-sm">
-            Notes
-          </label>
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            className="border-slate-200 p-3 border rounded-lg w-full text-sm"
-            rows={3}
-            placeholder="How are you feeling today? What's on your mind?"
-          />
-        </div>
-
         <Button
           className="bg-indigo-600 hover:bg-indigo-700 w-full"
-          disabled={!selectedMood || isSubmitting}
+          disabled={!selectedMood || !title.trim() || !content.trim() || isSubmitting}
           onClick={handleSubmit}
         >
           {isSubmitting ? (
             "Saving..."
           ) : (
             <>
-              Save Mood Entry
+              Save Journal Entry
               <ArrowRight className="ml-2 w-4 h-4" />
             </>
           )}
@@ -205,6 +236,7 @@ const QuickMoodCard = ({ onMoodSubmit }: { onMoodSubmit: (data: { mood: number, 
     </Card>
   );
 };
+
 const MoodInsightsCard = ({ moodData }: { moodData: MoodEntry[] }) => {
   const getAverageMood = () => {
     const sum = moodData.reduce((acc: number, curr: { mood: number }) => acc + curr.mood, 0);
@@ -375,7 +407,13 @@ interface UserSettings {
   monthlyGoal: number
 }
 
-
+interface MoodEntry {
+  id: string;
+  mood: number;
+  activities: string[];
+  createdAt: string;
+  notes: string | null;
+}
 
 const calculateStreak = (entries: MoodEntry[]): number => {
   if (!entries.length) return 0;
@@ -444,48 +482,62 @@ const Dashboard = () => {
     lastEntryDate: null as Date | null,
   })
 
-  // Fetch all required data
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setIsLoading(true)
+  // Add fetchDashboardData function
+  const fetchDashboardData = async () => {
+    try {
+      setIsLoading(true);
 
-        // Fetch user settings
-        const settingsResponse = await fetch('/api/settings')
-        const settingsData = await settingsResponse.json()
-        setSettings(settingsData)
+      // Fetch user settings
+      const settingsResponse = await fetch('/api/settings');
+      const settingsData = await settingsResponse.json();
+      setSettings(settingsData);
 
-        // Fetch mood entries
-        const moodResponse = await fetch('/api/mood')
-        const moodData = await moodResponse.json()
-        setMoodEntries(moodData)
+      // Fetch journal entries
+      const response = await fetch('/api/journal');
+      if (!response.ok) throw new Error('Failed to fetch entries');
+      const data = await response.json();
+      
+      // Filter for mood entries and convert format
+      const moodEntries = data
+        .filter((entry: any) => entry.category === 'Quick Entry')
+        .map((entry: any) => ({
+          id: entry.id,
+          mood: parseInt(entry.mood),
+          activities: entry.tags,
+          createdAt: entry.createdAt,
+          notes: entry.content
+        }));
 
-        // Calculate stats
-        if (Array.isArray(moodData) && moodData.length > 0) {
-          const streak = calculateStreak(moodData)
-          const monthlyProgress = calculateMonthlyProgress(moodData, settingsData.monthlyGoal)
-          const averageMood = moodData.reduce((acc, entry) => acc + entry.mood, 0) / moodData.length
-          const lastEntry = new Date(moodData[0].createdAt)
+      setMoodEntries(moodEntries);
 
-          setStats({
-            currentStreak: streak,
-            monthlyProgress,
-            totalEntries: moodData.length,
-            averageMood: Number(averageMood.toFixed(1)),
-            lastEntryDate: lastEntry,
-          })
-        }
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error)
-      } finally {
-        setIsLoading(false)
+      // Calculate stats
+      if (moodEntries.length > 0) {
+        const streak = calculateStreak(moodEntries);
+        const monthlyProgress = calculateMonthlyProgress(moodEntries, settingsData.monthlyGoal);
+        const averageMood = moodEntries.reduce((acc, curr) => acc + curr.mood, 0) / moodEntries.length;
+        const lastEntry = new Date(moodEntries[0].createdAt);
+
+        setStats({
+          currentStreak: streak,
+          monthlyProgress,
+          totalEntries: moodEntries.length,
+          averageMood: Number(averageMood.toFixed(1)),
+          lastEntryDate: lastEntry,
+        });
       }
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setIsLoading(false);
     }
+  };
 
+  // Use fetchDashboardData in useEffect
+  useEffect(() => {
     if (status === 'authenticated') {
-      fetchDashboardData()
+      fetchDashboardData();
     }
-  }, [status])
+  }, [status]);
 
   // Show loading state
   if (status === "loading" || isLoading) {
@@ -571,25 +623,27 @@ const Dashboard = () => {
 
           {/* Quick Mood Entry and Insights */}
           <div className="gap-8 grid grid-cols-1 lg:grid-cols-2">
-            <QuickMoodCard onMoodSubmit={async (data) => {
+            <QuickJournalCard onJournalSubmit={async (data) => {
               try {
-                const response = await fetch('/api/mood', {
+                const response = await fetch('/api/journal', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
-                    mood: data.mood,
-                    activities: data.activities,
-                    notes: data.note,
-                    date: new Date().toISOString(),
+                    title: data.title,
+                    content: data.content,
+                    mood: data.mood.toString(),
+                    tags: data.tags,
+                    category: data.category,
+                    isFavorite: false,
                   }),
-                })
+                });
 
-                if (!response.ok) throw new Error('Failed to save mood entry')
+                if (!response.ok) throw new Error('Failed to save journal entry');
 
-                // Refresh dashboard data after new entry
-                //fetchDashboardData()
+                // Now fetchDashboardData will be available
+                await fetchDashboardData();
               } catch (error) {
-                console.error('Error saving mood entry:', error)
+                console.error('Error saving journal entry:', error);
               }
             }} />
             <MoodInsightsCard moodData={moodEntries} />
