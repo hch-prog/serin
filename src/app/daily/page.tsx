@@ -12,7 +12,6 @@ import { format } from "date-fns"
 import {
   Smile,
   Frown,
-  Meh,
   Sun,
   Moon,
   Heart,
@@ -72,7 +71,7 @@ const activities = [
 ]
 
 export default function DailyMoodPage() {
-  const { data: session, status } = useSession({
+  const { status } = useSession({
     required: true,
     onUnauthenticated() {
       redirect('/login')
@@ -93,8 +92,11 @@ export default function DailyMoodPage() {
     sleep: 7,
     notes: "",
   })
-  const [aiInsights, setAiInsights] = useState<string | null>(null)
+  
   const [hasSubmittedToday, setHasSubmittedToday] = useState(false)
+
+  
+ 
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [isEditMode, setIsEditMode] = useState(false)
   const [latestEntry, setLatestEntry] = useState<MoodEntry | null>(null)
@@ -180,7 +182,6 @@ export default function DailyMoodPage() {
         throw new Error(data.error || 'Failed to submit mood entry')
       }
 
-      setAiInsights(data.data.aiInsights)
       setLatestEntry(data.data)
       setShowInsights(true)
       await fetchMoodHistory()
@@ -197,7 +198,6 @@ export default function DailyMoodPage() {
   const resetForm = () => {
     setShowInsights(false)
     setStep(1)
-    setAiInsights(null)
     setLatestEntry(null)
     setFormData({
       mood: 5,
@@ -325,7 +325,7 @@ export default function DailyMoodPage() {
             {hasSubmittedToday && isToday(selectedDate) ? (
               <div className="bg-green-50 border border-green-100 rounded-xl p-6 text-center">
                 <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-3" />
-                <h2 className="text-xl font-semibold text-green-800 mb-2">Today's Reflection Complete!</h2>
+                <h2 className="text-xl font-semibold text-green-800 mb-2">Today&apos;s Reflection Complete!</h2>
                 <p className="text-green-600 mb-4">
                   Great job on maintaining your daily reflection practice.
                 </p>
@@ -353,7 +353,7 @@ export default function DailyMoodPage() {
                   className="bg-green-600 hover:bg-green-700 text-white font-medium px-6"
                 >
                   <Pencil className="w-4 h-4 mr-2" />
-                  Edit Today's Entry
+                  Edit Today&apos;s Entry
                 </Button>
               </div>
             ) : (

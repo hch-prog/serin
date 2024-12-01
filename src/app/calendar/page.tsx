@@ -17,9 +17,6 @@ import {
   Zap,
   Heart,
   Brain,
-  Coffee,
-  Music,
-  Users,
   Sparkles,
 } from "lucide-react"
 import { 
@@ -69,7 +66,7 @@ const getTimeOfDay = () => {
 }
 
 export default function CalendarPage() {
-  const { data: session, status } = useSession({
+  const { status } = useSession({
     required: true,
     onUnauthenticated() {
       redirect('/login')

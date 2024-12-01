@@ -65,8 +65,8 @@ const testimonials = [
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
+  visible: { 
+    opacity: 1, 
     y: 0,
     transition: {
       duration: 0.6,
@@ -104,7 +104,7 @@ const Hero = () => (
           variants={container}
           className="max-w-xl"
         >
-          <motion.div
+          <motion.div 
             variants={fadeInUp}
             className="flex items-center space-x-2 mb-6"
           >
@@ -120,7 +120,7 @@ const Hero = () => (
             </span>
           </motion.div>
 
-          <motion.h1
+          <motion.h1 
             variants={fadeInUp}
             className="mb-6 font-semibold text-6xl leading-tight"
           >
@@ -130,19 +130,19 @@ const Hero = () => (
             </span>
           </motion.h1>
 
-          <motion.p
+          <motion.p 
             variants={fadeInUp}
             className="mb-8 text-lg text-slate-600"
           >
-            Transform your daily reflections with AI-powered insights, mood tracking,
+            Transform your daily reflections with AI-powered insights, mood tracking, 
             and personalized guidance. Your journey to mindfulness starts here.
           </motion.p>
 
-          <motion.div
+          <motion.div 
             variants={fadeInUp}
             className="flex sm:flex-row flex-col gap-4"
           >
-            <Button
+            <Button 
               onClick={() => window.location.href = '/dashboard'}
               className="bg-slate-900 hover:bg-slate-800 shadow-xl hover:shadow-2xl px-8 py-6 rounded-full text-lg text-white transform transition-all hover:-translate-y-1 duration-200"
             >
@@ -154,7 +154,7 @@ const Hero = () => (
               className="border-slate-200 hover:border-slate-300 px-8 py-6 rounded-full text-lg group"
             >
               Watch Demo
-              <motion.span
+              <motion.span 
                 className="group-hover:bg-slate-200 bg-slate-100 ml-2 p-2 rounded-full"
                 whileHover={{ scale: 1.1 }}
               >
@@ -183,8 +183,8 @@ const Features = () => (
     <div className="absolute inset-0">
       <div className="right-0 absolute inset-y-0 bg-slate-50 w-1/2" />
     </div>
-
-    <motion.div
+    
+    <motion.div 
       className="relative mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl"
       initial="hidden"
       whileInView="visible"
@@ -193,29 +193,29 @@ const Features = () => (
     >
       <div className="items-center gap-16 grid lg:grid-cols-2">
         <div>
-          <motion.span
+          <motion.span 
             className="inline-block mb-6 font-medium text-indigo-600 text-sm"
             variants={fadeInUp}
           >
             Features that matter
           </motion.span>
-          <motion.h2
+          <motion.h2 
             className="mb-8 font-medium text-4xl text-slate-900 tracking-tight"
             variants={fadeInUp}
           >
             Everything you need for meaningful self-reflection
           </motion.h2>
-          <motion.p
+          <motion.p 
             className="mb-10 text-lg text-slate-600"
             variants={fadeInUp}
           >
-            We&apos;ve refined every feature to make your journaling experience
+            We&apos;ve refined every feature to make your journaling experience 
             seamless and insightful, helping you build a sustainable practice.
           </motion.p>
-
+          
           <div className="space-y-6">
             {features.map((feature, index) => (
-              <motion.div
+              <motion.div 
                 key={index}
                 className="flex gap-4"
                 variants={fadeInUp}
@@ -235,22 +235,22 @@ const Features = () => (
             ))}
           </div>
         </div>
-
+        
         <div className="lg:pl-16">
           <div className="relative">
             <div className="absolute -inset-4">
-              <div className="opacity-30 blur-lg mx-auto w-full h-full filter"
-                style={{
-                  background: "linear-gradient(90deg, #94a3b8 -0.55%, #6366f1 22.86%, #8b5cf6 48.36%, #6366f1 73.33%, #94a3b8 99.34%)"
-                }}
+              <div className="opacity-30 blur-lg mx-auto w-full h-full filter" 
+                   style={{ 
+                     background: "linear-gradient(90deg, #94a3b8 -0.55%, #6366f1 22.86%, #8b5cf6 48.36%, #6366f1 73.33%, #94a3b8 99.34%)"
+                   }} 
               />
             </div>
-
+            
             <div className="relative bg-white shadow-xl rounded-2xl overflow-hidden">
               {/* Your demo UI here */}
-              <Image
-                src="/demo-screenshot.png"
-                alt="App interface"
+              <Image 
+                src="/demo-screenshot.png" 
+                alt="App interface" 
                 width={800}
                 height={600}
                 className="w-full"
@@ -285,7 +285,7 @@ const Home = () => {
 // 1. How It Works Section
 const HowItWorks = () => (
   <section className="bg-white py-24">
-    <motion.div
+    <motion.div 
       className="mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl"
       initial="hidden"
       whileInView="visible"
@@ -293,13 +293,13 @@ const HowItWorks = () => (
       variants={container}
     >
       <div className="mb-16 text-center">
-        <motion.h2
+        <motion.h2 
           variants={fadeInUp}
           className="mb-4 font-semibold text-3xl"
         >
           Your Journey to Mindfulness
         </motion.h2>
-        <motion.p
+        <motion.p 
           variants={fadeInUp}
           className="text-slate-600"
         >
@@ -345,7 +345,7 @@ const HowItWorks = () => (
 // 2. Stats Section
 const Stats = () => (
   <section className="bg-slate-900 py-24 text-white">
-    <motion.div
+    <motion.div 
       className="mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl"
       initial="hidden"
       whileInView="visible"
@@ -378,7 +378,7 @@ const Stats = () => (
 // 3. Integration Partners
 const Partners = () => (
   <section className="bg-white py-24">
-    <motion.div
+    <motion.div 
       className="mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl"
       initial="hidden"
       whileInView="visible"
@@ -386,13 +386,13 @@ const Partners = () => (
       variants={container}
     >
       <div className="mb-16 text-center">
-        <motion.h2
+        <motion.h2 
           variants={fadeInUp}
           className="mb-4 font-semibold text-3xl"
         >
           Integrated with Your Favorite Tools
         </motion.h2>
-        <motion.p
+        <motion.p 
           variants={fadeInUp}
           className="text-slate-600"
         >
@@ -400,12 +400,12 @@ const Partners = () => (
         </motion.p>
       </div>
 
-      <motion.div
+      <motion.div 
         variants={fadeInUp}
         className="gap-8 grid grid-cols-2 md:grid-cols-4"
       >
         {[1, 2, 3, 4].map((partner) => (
-          <div
+          <div 
             key={partner}
             className="flex justify-center items-center bg-slate-50 rounded-xl h-24"
           >
@@ -527,10 +527,11 @@ const AIChatPreview = () => {
                 className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[80%] p-4 rounded-2xl ${message.type === 'user'
+                  className={`max-w-[80%] p-4 rounded-2xl ${
+                    message.type === 'user'
                       ? 'bg-indigo-600 text-white rounded-br-none'
                       : 'bg-slate-100 text-slate-800 rounded-bl-none'
-                    }`}
+                  }`}
                 >
                   {message.text}
                 </div>

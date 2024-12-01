@@ -11,25 +11,19 @@ import { format } from "date-fns"
 import {
   Search,
   Plus,
-  Calendar,
-  Tag,
-  Bookmark,
   Grid2X2,
   List,
   MoreVertical,
   Edit3,
   Trash2,
-  Image as ImageIcon,
-  Link,
-  Smile,
   Clock,
   Filter,
   SortAsc,
   Loader2,
   Save,
   X,
-  Cloud,
   AlertCircle,
+  Bookmark,
 } from "lucide-react"
 import { Sidebar } from "@/components/common/sidebar"
 import {
@@ -44,7 +38,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
@@ -76,7 +69,7 @@ const categories = [
 const moodEmojis = ["😊", "😔", "😐", "😡", "🥳", "😴", "🤔", "😅"]
 
 export default function JournalPage() {
-  const { data: session, status } = useSession({
+  const { status } = useSession({
     required: true,
     onUnauthenticated() {
       redirect('/login')
@@ -93,7 +86,6 @@ export default function JournalPage() {
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'updated'>('newest')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [showMoodPicker, setShowMoodPicker] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
   // New entry form state
@@ -165,7 +157,7 @@ export default function JournalPage() {
 
       const response = await fetch('/api/journal', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -178,9 +170,9 @@ export default function JournalPage() {
           isFavorite: newEntry.isFavorite
         }),
       })
-      
+
       const data = await response.json()
-      
+
       if (!response.ok) {
         throw new Error(data.error || 'Failed to save entry')
       }
@@ -213,7 +205,7 @@ export default function JournalPage() {
     return entries
       .filter(entry => {
         const matchesSearch = entry.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            entry.content.toLowerCase().includes(searchQuery.toLowerCase())
+          entry.content.toLowerCase().includes(searchQuery.toLowerCase())
         const matchesCategory = !selectedCategory || entry.category === selectedCategory
         return matchesSearch && matchesCategory
       })
@@ -238,11 +230,10 @@ export default function JournalPage() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className={`${
-        viewMode === 'grid' 
-          ? 'col-span-1' 
-          : 'col-span-full'
-      }`}
+      className={`${viewMode === 'grid'
+        ? 'col-span-1'
+        : 'col-span-full'
+        }`}
     >
       <Card className="h-full hover:shadow-lg transition-shadow duration-300 bg-white/80 backdrop-blur-sm border-none">
         <CardHeader className="flex flex-row items-start justify-between space-y-0">
@@ -267,7 +258,7 @@ export default function JournalPage() {
                 <Edit3 className="w-4 h-4 mr-2" />
                 Edit
               </DropdownMenuItem>
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 className="text-red-600"
                 onClick={() => setEntryToDelete(entry)}
               >
@@ -281,7 +272,7 @@ export default function JournalPage() {
           <p className={`text-slate-600 ${viewMode === 'grid' ? 'line-clamp-3' : 'line-clamp-none'}`}>
             {entry.content}
           </p>
-          
+
           {entry.tags.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-4">
               {entry.tags.map(tag => (
@@ -291,9 +282,9 @@ export default function JournalPage() {
               ))}
             </div>
           )}
-          
+
           <div className="flex items-center justify-between mt-4">
-            <Badge 
+            <Badge
               className={
                 categories.find(c => c.name === entry.category)?.color || 'bg-slate-100'
               }
@@ -309,28 +300,7 @@ export default function JournalPage() {
     </motion.div>
   )
 
-  // Add this temporary test function
-  const testEntry = async () => {
-    try {
-      const response = await fetch('/api/journal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: "Test Entry",
-          content: "Test Content",
-          category: "Personal",
-          tags: [],
-          isFavorite: false
-        })
-      });
-      
-      const data = await response.json();
-      console.log("Test entry response:", data);
-    } catch (error) {
-      console.error("Test entry error:", error);
-    }
-  };
-
+ 
   const fetchEntries = async () => {
     setIsLoading(true)
     try {
@@ -386,7 +356,7 @@ export default function JournalPage() {
         isCollapsed={sidebarCollapsed}
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
-      
+
       <main className="flex-1 overflow-auto">
         <div className="p-8">
           <div className="max-w-7xl mx-auto">
@@ -396,7 +366,7 @@ export default function JournalPage() {
                 <h1 className="text-3xl font-bold text-slate-900">Journal</h1>
                 <p className="text-slate-600 mt-1">Capture your thoughts and memories</p>
               </div>
-              
+
               <Button onClick={() => setIsNewEntryOpen(true)} className="bg-indigo-600 hover:bg-indigo-700">
                 <Plus className="w-4 h-4 mr-2" />
                 New Entry
@@ -406,7 +376,7 @@ export default function JournalPage() {
             {error && (
               <div className="mb-4 p-4 bg-red-50 text-red-600 rounded-lg">
                 {error}
-                <button 
+                <button
                   onClick={() => setError(null)}
                   className="float-right text-red-400 hover:text-red-600"
                 >
@@ -426,7 +396,7 @@ export default function JournalPage() {
                   className="pl-10"
                 />
               </div>
-              
+
               <div className="flex gap-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -443,7 +413,7 @@ export default function JournalPage() {
                       All Categories
                     </DropdownMenuItem>
                     {categories.map(category => (
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
                         key={category.name}
                         onClick={() => setSelectedCategory(
                           selectedCategory === category.name ? null : category.name
@@ -506,7 +476,7 @@ export default function JournalPage() {
                   <p className="text-slate-500 mb-4">
                     {error ? 'Failed to load entries' : 'No journal entries yet'}
                   </p>
-                  <Button 
+                  <Button
                     onClick={() => setIsNewEntryOpen(true)}
                     className="bg-indigo-600 hover:bg-indigo-700"
                   >
@@ -516,13 +486,12 @@ export default function JournalPage() {
                 </div>
               </div>
             ) : (
-              <motion.div 
-                layout 
-                className={`grid gap-6 ${
-                  viewMode === 'grid' 
-                    ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' 
-                    : 'grid-cols-1'
-                }`}
+              <motion.div
+                layout
+                className={`grid gap-6 ${viewMode === 'grid'
+                  ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+                  : 'grid-cols-1'
+                  }`}
               >
                 <AnimatePresence mode="popLayout">
                   {filteredEntries.map((entry) => renderEntryCard(entry))}
@@ -541,7 +510,7 @@ export default function JournalPage() {
               {format(new Date(), 'EEEE, MMMM d, yyyy')}
             </DialogTitle>
             <DialogDescription>
-              What's on your mind today?
+              What&apos;s on your mind today?
             </DialogDescription>
           </DialogHeader>
 
@@ -549,8 +518,8 @@ export default function JournalPage() {
             <div className="bg-red-50 border border-red-100 text-red-600 p-4 rounded-lg mb-4 flex items-center gap-2">
               <AlertCircle className="w-5 h-5 flex-shrink-0" />
               <p>{error}</p>
-              <button 
-                onClick={() => setError(null)} 
+              <button
+                onClick={() => setError(null)}
                 className="ml-auto text-red-400 hover:text-red-600"
               >
                 <X className="w-4 h-4" />
@@ -606,9 +575,8 @@ export default function JournalPage() {
                       <button
                         key={`${emoji}-${index}`}
                         onClick={() => setNewEntry({ ...newEntry, mood: emoji })}
-                        className={`p-2 rounded-lg hover:bg-slate-100 ${
-                          newEntry.mood === emoji ? 'bg-slate-100' : ''
-                        }`}
+                        className={`p-2 rounded-lg hover:bg-slate-100 ${newEntry.mood === emoji ? 'bg-slate-100' : ''
+                          }`}
                       >
                         {emoji}
                       </button>
@@ -665,13 +633,13 @@ export default function JournalPage() {
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && e.currentTarget.value.trim()) {
                           const newTag = e.currentTarget.value.trim().toLowerCase();
-                          
+
                           if (newEntry.tags.map(t => t.toLowerCase()).includes(newTag)) {
-                            setError(`Tag "${newTag}" already exists`);
+                            setError(`Tag &quot;${newTag}&quot; already exists`);
                             setTimeout(() => setError(null), 3000);
                             return;
                           }
-                          
+
                           setNewEntry({
                             ...newEntry,
                             tags: [...newEntry.tags, newTag]
@@ -687,7 +655,7 @@ export default function JournalPage() {
                 <div className="flex items-center gap-2">
                   <Switch
                     checked={newEntry.isFavorite}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={(checked) =>
                       setNewEntry({ ...newEntry, isFavorite: checked })
                     }
                   />
@@ -701,7 +669,7 @@ export default function JournalPage() {
               <Button variant="outline" onClick={() => setIsNewEntryOpen(false)}>
                 Cancel
               </Button>
-              <Button 
+              <Button
                 onClick={handleSaveEntry}
                 className="bg-indigo-600 hover:bg-indigo-700"
                 disabled={isSaving}
@@ -761,7 +729,7 @@ export default function JournalPage() {
               <Button variant="outline" onClick={() => setSelectedEntry(null)}>
                 Cancel
               </Button>
-              <Button 
+              <Button
                 onClick={async () => {
                   if (selectedEntry) {
                     try {
@@ -770,9 +738,9 @@ export default function JournalPage() {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(selectedEntry),
                       })
-                      
+
                       if (!response.ok) throw new Error('Failed to update entry')
-                      
+
                       await fetchEntries()
                       setSelectedEntry(null)
                     } catch (error) {
@@ -796,14 +764,14 @@ export default function JournalPage() {
           <DialogHeader>
             <DialogTitle>Delete Entry</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{entryToDelete?.title}"? This action cannot be undone.
+              Are you sure you want to delete &quot;{entryToDelete?.title}&quot;? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-4 mt-4">
             <Button variant="outline" onClick={() => setEntryToDelete(null)}>
               Cancel
             </Button>
-            <Button 
+            <Button
               variant="destructive"
               onClick={() => entryToDelete && handleDeleteEntry(entryToDelete)}
             >
