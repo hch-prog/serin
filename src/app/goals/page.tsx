@@ -35,6 +35,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Calendar as CalendarComponent } from "@/components/ui/calendar"
+import axios from 'axios';
 
 interface Goal {
     id: string
@@ -92,6 +93,7 @@ export default function GoalsPage() {
         dueDate: undefined as Date | undefined,
         milestones: [] as { title: string; dueDate: Date | undefined }[],
     })
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const fetchGoals = async () => {
         if (status !== 'authenticated') return;
@@ -102,20 +104,8 @@ export default function GoalsPage() {
             if (filter.category) params.append('category', filter.category);
             if (filter.status) params.append('status', filter.status);
 
-            const response = await fetch(`/api/goals?${params.toString()}`);
-            
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to fetch goals');
-            }
-
-            const jsonData = await response.json();
-            
-            if (!jsonData || !jsonData.data) {
-                throw new Error('Invalid response format');
-            }
-
-            setGoals(Array.isArray(jsonData.data) ? jsonData.data : []);
+            const { data } = await axios.get(`/api/goals?${params.toString()}`);
+            setGoals(Array.isArray(data.data) ? data.data : []);
         } catch (error) {
             console.error('Error fetching goals:', error);
             setGoals([]);
@@ -134,10 +124,9 @@ export default function GoalsPage() {
                 throw new Error('Title is required');
             }
 
-            setIsLoading(true);
-
-            // Log the request payload for debugging
-            const payload = {
+            setIsSubmitting(true);
+            
+            const { data } = await axios.post('/api/goals', {
                 title: newGoal.title,
                 description: newGoal.description,
                 category: newGoal.category,
@@ -147,38 +136,9 @@ export default function GoalsPage() {
                     title: m.title,
                     dueDate: m.dueDate?.toISOString() || null,
                 })),
-            };
-
-            console.log('Creating goal with payload:', payload);
-
-            const response = await fetch('/api/goals', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(payload),
             });
 
-            // Log the response status and headers for debugging
-            console.log('Response status:', response.status);
-            console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
-            // Check if response is empty
-            const text = await response.text();
-            if (!text) {
-                throw new Error('Empty response from server');
-            }
-
-            // Parse the JSON response
-            const jsonData = JSON.parse(text);
-            console.log('Response data:', jsonData);
-
-            if (!response.ok) {
-                throw new Error(jsonData.error || 'Failed to create goal');
-            }
-
-            // Reset form
+            // Reset form and refresh
             setNewGoal({
                 title: "",
                 description: "",
@@ -187,35 +147,31 @@ export default function GoalsPage() {
                 dueDate: undefined,
                 milestones: [],
             });
-
-            // Close modal and refresh goals
             setIsNewGoalOpen(false);
-            await fetchGoals();
+            
+            // Update goals state directly instead of refetching
+            setGoals(prev => [data.data, ...prev]);
 
         } catch (error) {
             console.error('Error creating goal:', error);
             alert(error instanceof Error ? error.message : 'Failed to create goal');
         } finally {
-            setIsLoading(false);
+            setIsSubmitting(false);
         }
     };
 
     const handleUpdateGoal = async (goalId: string, updates: Partial<Goal>) => {
         try {
-            const response = await fetch(`/api/goals?id=${goalId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updates),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to update goal');
-            }
-
-            await fetchGoals();
+            const { data } = await axios.put(`/api/goals?id=${goalId}`, updates);
+            
+            // Update goals state directly
+            setGoals(prev => prev.map(goal => 
+                goal.id === goalId ? data.data : goal
+            ));
+            setSelectedGoal(null);
         } catch (error) {
             console.error('Error updating goal:', error);
+            alert(error instanceof Error ? error.message : 'Failed to update goal');
         }
     };
 
@@ -223,18 +179,13 @@ export default function GoalsPage() {
         if (!confirm('Are you sure you want to delete this goal?')) return;
 
         try {
-            const response = await fetch(`/api/goals?id=${goalId}`, {
-                method: 'DELETE',
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to delete goal');
-            }
-
-            await fetchGoals();
+            await axios.delete(`/api/goals?id=${goalId}`);
+            
+            // Update goals state directly
+            setGoals(prev => prev.filter(goal => goal.id !== goalId));
         } catch (error) {
             console.error('Error deleting goal:', error);
+            alert(error instanceof Error ? error.message : 'Failed to delete goal');
         }
     };
 
@@ -293,106 +244,125 @@ export default function GoalsPage() {
 
                         {/* Goals Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {goals.map(goal => (
-                                <Card key={goal.id} className="relative">
-                                    <CardHeader className="pb-4">
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <CardTitle className="text-lg">{goal.title}</CardTitle>
-                                                <p className="text-sm text-slate-500 mt-1">
-                                                    {goal.description}
-                                                </p>
+                            {isLoading ? (
+                                // Show skeleton loaders instead of full-page loader
+                                Array.from({ length: 6 }).map((_, index) => (
+                                    <Card key={index} className="animate-pulse">
+                                        <CardHeader className="space-y-2">
+                                            <div className="h-4 bg-slate-200 rounded w-3/4" />
+                                            <div className="h-3 bg-slate-200 rounded w-1/2" />
+                                        </CardHeader>
+                                        <CardContent>
+                                            <div className="space-y-3">
+                                                <div className="h-3 bg-slate-200 rounded" />
+                                                <div className="h-3 bg-slate-200 rounded w-5/6" />
+                                                <div className="h-3 bg-slate-200 rounded w-4/6" />
                                             </div>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="sm">
-                                                        <MoreVertical className="w-4 h-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent>
-                                                    <DropdownMenuItem onClick={() => setSelectedGoal(goal)}>
-                                                        Edit
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem
-                                                        className="text-red-600"
-                                                        onClick={() => handleDeleteGoal(goal.id)}
-                                                    >
-                                                        Delete
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="space-y-4">
-                                            <div className="flex items-center gap-2">
-                                                <span className={`px-2 py-1 rounded-full text-xs ${categories.find(c => c.name === goal.category)?.color
-                                                    }`}>
-                                                    {goal.category}
-                                                </span>
-                                                <span className={`px-2 py-1 rounded-full text-xs ${goal.priority === 'High' ? 'bg-red-100 text-red-800' :
-                                                        goal.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                                                            'bg-green-100 text-green-800'
-                                                    }`}>
-                                                    {goal.priority}
-                                                </span>
-                                            </div>
-
-                                            <div>
-                                                <div className="flex justify-between text-sm text-slate-600 mb-2">
-                                                    <span>Progress</span>
-                                                    <span>{goal.progress}%</span>
+                                        </CardContent>
+                                    </Card>
+                                ))
+                            ) : (
+                                goals.map(goal => (
+                                    <Card key={goal.id} className="relative">
+                                        <CardHeader className="pb-4">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <CardTitle className="text-lg">{goal.title}</CardTitle>
+                                                    <p className="text-sm text-slate-500 mt-1">
+                                                        {goal.description}
+                                                    </p>
                                                 </div>
-                                                <Progress value={goal.progress} />
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="sm">
+                                                            <MoreVertical className="w-4 h-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent>
+                                                        <DropdownMenuItem onClick={() => setSelectedGoal(goal)}>
+                                                            Edit
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            className="text-red-600"
+                                                            onClick={() => handleDeleteGoal(goal.id)}
+                                                        >
+                                                            Delete
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
                                             </div>
-
-                                            {goal.dueDate && (
-                                                <div className="flex items-center text-sm text-slate-600">
-                                                    <Clock className="w-4 h-4 mr-2" />
-                                                    <span>Due {format(new Date(goal.dueDate), 'MMM d, yyyy')}</span>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <div className="space-y-4">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`px-2 py-1 rounded-full text-xs ${categories.find(c => c.name === goal.category)?.color
+                                                        }`}>
+                                                        {goal.category}
+                                                    </span>
+                                                    <span className={`px-2 py-1 rounded-full text-xs ${goal.priority === 'High' ? 'bg-red-100 text-red-800' :
+                                                            goal.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                                                                'bg-green-100 text-green-800'
+                                                        }`}>
+                                                        {goal.priority}
+                                                    </span>
                                                 </div>
-                                            )}
 
-                                            {goal.milestones.length > 0 && (
-                                                <div className="border-t pt-4 mt-4">
-                                                    <h4 className="text-sm font-medium mb-2">Milestones</h4>
-                                                    <div className="space-y-2">
-                                                        {goal.milestones.map(milestone => (
-                                                            <div
-                                                                key={milestone.id}
-                                                                className="flex items-center gap-2 text-sm"
-                                                            >
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={milestone.isCompleted}
-                                                                    onChange={() => {
-                                                                        const updatedMilestones = goal.milestones.map(m =>
-                                                                            m.id === milestone.id
-                                                                                ? { ...m, isCompleted: !m.isCompleted }
-                                                                                : m
-                                                                        )
-                                                                        handleUpdateGoal(goal.id, {
-                                                                            milestones: updatedMilestones,
-                                                                            progress: Math.round(
-                                                                                (updatedMilestones.filter(m => m.isCompleted).length /
-                                                                                    updatedMilestones.length) *
-                                                                                100
-                                                                            ),
-                                                                        })
-                                                                    }}
-                                                                />
-                                                                <span className={milestone.isCompleted ? 'line-through text-slate-400' : ''}>
-                                                                    {milestone.title}
-                                                                </span>
-                                                            </div>
-                                                        ))}
+                                                <div>
+                                                    <div className="flex justify-between text-sm text-slate-600 mb-2">
+                                                        <span>Progress</span>
+                                                        <span>{goal.progress}%</span>
                                                     </div>
+                                                    <Progress value={goal.progress} />
                                                 </div>
-                                            )}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
+
+                                                {goal.dueDate && (
+                                                    <div className="flex items-center text-sm text-slate-600">
+                                                        <Clock className="w-4 h-4 mr-2" />
+                                                        <span>Due {format(new Date(goal.dueDate), 'MMM d, yyyy')}</span>
+                                                    </div>
+                                                )}
+
+                                                {goal.milestones.length > 0 && (
+                                                    <div className="border-t pt-4 mt-4">
+                                                        <h4 className="text-sm font-medium mb-2">Milestones</h4>
+                                                        <div className="space-y-2">
+                                                            {goal.milestones.map(milestone => (
+                                                                <div
+                                                                    key={milestone.id}
+                                                                    className="flex items-center gap-2 text-sm"
+                                                                >
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={milestone.isCompleted}
+                                                                        onChange={() => {
+                                                                            const updatedMilestones = goal.milestones.map(m =>
+                                                                                m.id === milestone.id
+                                                                                    ? { ...m, isCompleted: !m.isCompleted }
+                                                                                    : m
+                                                                            )
+                                                                            handleUpdateGoal(goal.id, {
+                                                                                milestones: updatedMilestones,
+                                                                                progress: Math.round(
+                                                                                    (updatedMilestones.filter(m => m.isCompleted).length /
+                                                                                        updatedMilestones.length) *
+                                                                                    100
+                                                                                ),
+                                                                            })
+                                                                        }}
+                                                                    />
+                                                                    <span className={milestone.isCompleted ? 'line-through text-slate-400' : ''}>
+                                                                        {milestone.title}
+                                                                    </span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                ))
+                            )}
                         </div>
                     </div>
                 </div>
@@ -569,16 +539,27 @@ export default function GoalsPage() {
                         <Button
                             variant="outline"
                             onClick={() => setIsNewGoalOpen(false)}
+                            disabled={isSubmitting}
                             className="px-6"
                         >
                             Cancel
                         </Button>
                         <Button
                             onClick={handleCreateGoal}
+                            disabled={isSubmitting}
                             className="px-6 bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700"
                         >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Create Goal
+                            {isSubmitting ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Creating...
+                                </>
+                            ) : (
+                                <>
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Create Goal
+                                </>
+                            )}
                         </Button>
                     </div>
                 </DialogContent>

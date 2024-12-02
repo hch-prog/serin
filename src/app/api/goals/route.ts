@@ -3,28 +3,33 @@ import { getServerSession } from "next-auth"
 import { prisma } from "@/lib/prisma"
 import { authOptions } from "@/lib/authOption"
 
+// Helper function for consistent responses
+const createResponse = (data: any, status = 200) => {
+  return NextResponse.json(data, {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized" }, 
-        { status: 401 }
-      )
+      return createResponse({ error: "Unauthorized" }, 401)
     }
 
     const url = new URL(req.url)
     const category = url.searchParams.get('category')
     const status = url.searchParams.get('status')
 
-    const where = {
-      userId: session.user.id,
-      ...(category && { category }),
-      ...(status && { status }),
-    }
-
     const goals = await prisma.goal.findMany({
-      where,
+      where: {
+        userId: session.user.id,
+        ...(category && { category }),
+        ...(status && { status }),
+      },
       include: {
         milestones: true,
       },
@@ -33,16 +38,10 @@ export async function GET(req: Request) {
       },
     })
 
-    return NextResponse.json({ data: goals })
+    return createResponse({ data: goals })
   } catch (error) {
     console.error("Error in goals API:", error)
-    return NextResponse.json(
-      { 
-        error: "Failed to fetch goals",
-        details: error instanceof Error ? error.message : "Unknown error"
-      },
-      { status: 500 }
-    )
+    return createResponse({ error: "Failed to fetch goals" }, 500)
   }
 }
 
@@ -50,33 +49,16 @@ export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return new NextResponse(
-        JSON.stringify({ error: "Unauthorized" }), 
-        { 
-          status: 401,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      )
+      return createResponse({ error: "Unauthorized" }, 401)
     }
 
-    // Parse and validate the request body
     const body = await req.json()
-    console.log('Received request body:', body)  // Debug log
-
     const { title, description, category, priority, dueDate, milestones } = body
 
-    // Validate required fields
     if (!title?.trim()) {
-      return new NextResponse(
-        JSON.stringify({ error: "Title is required" }), 
-        { 
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      )
+      return createResponse({ error: "Title is required" }, 400)
     }
 
-    // Create the goal
     const goal = await prisma.goal.create({
       data: {
         title: title.trim(),
@@ -84,12 +66,14 @@ export async function POST(req: Request) {
         category,
         status: "In Progress",
         priority,
+        progress: 0,
         dueDate: dueDate ? new Date(dueDate) : null,
         userId: session.user.id,
         milestones: {
           create: milestones?.map((m: { title: string, dueDate: string | null }) => ({
             title: m.title.trim(),
             dueDate: m.dueDate ? new Date(m.dueDate) : null,
+            isCompleted: false,
           })) || [],
         },
       },
@@ -98,30 +82,10 @@ export async function POST(req: Request) {
       },
     })
 
-    console.log('Created goal:', goal)  // Debug log
-
-    // Return the response
-    return new NextResponse(
-      JSON.stringify({ data: goal, success: true }), 
-      { 
-        status: 201,
-        headers: { 'Content-Type': 'application/json' }
-      }
-    )
-
+    return createResponse({ data: goal }, 201)
   } catch (error) {
     console.error("Error creating goal:", error)
-    
-    return new NextResponse(
-      JSON.stringify({ 
-        error: "Failed to create goal",
-        details: error instanceof Error ? error.message : "Unknown error"
-      }), 
-      { 
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
-    )
+    return createResponse({ error: "Failed to create goal" }, 500)
   }
 }
 
@@ -129,13 +93,25 @@ export async function PUT(req: Request) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return createResponse({ error: "Unauthorized" }, 401)
     }
 
     const url = new URL(req.url)
     const goalId = url.searchParams.get('id')
     if (!goalId) {
-      return NextResponse.json({ error: "Goal ID required" }, { status: 400 })
+      return createResponse({ error: "Goal ID required" }, 400)
+    }
+
+    // Verify ownership
+    const existingGoal = await prisma.goal.findFirst({
+      where: {
+        id: goalId,
+        userId: session.user.id,
+      },
+    })
+
+    if (!existingGoal) {
+      return createResponse({ error: "Goal not found" }, 404)
     }
 
     const body = await req.json()
@@ -144,26 +120,23 @@ export async function PUT(req: Request) {
     const goal = await prisma.goal.update({
       where: { id: goalId },
       data: {
-        title,
-        description,
+        title: title?.trim(),
+        description: description?.trim(),
         category,
         status,
         priority,
-        dueDate: dueDate ? new Date(dueDate) : null,
         progress,
+        dueDate: dueDate ? new Date(dueDate) : null,
       },
       include: {
         milestones: true,
       },
     })
 
-    return NextResponse.json(goal)
+    return createResponse({ data: goal })
   } catch (error) {
     console.error("Error updating goal:", error)
-    return NextResponse.json(
-      { error: "Failed to update goal" },
-      { status: 500 }
-    )
+    return createResponse({ error: "Failed to update goal" }, 500)
   }
 }
 
@@ -171,25 +144,34 @@ export async function DELETE(req: Request) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return createResponse({ error: "Unauthorized" }, 401)
     }
 
     const url = new URL(req.url)
     const goalId = url.searchParams.get('id')
     if (!goalId) {
-      return NextResponse.json({ error: "Goal ID required" }, { status: 400 })
+      return createResponse({ error: "Goal ID required" }, 400)
+    }
+
+    // Verify ownership
+    const existingGoal = await prisma.goal.findFirst({
+      where: {
+        id: goalId,
+        userId: session.user.id,
+      },
+    })
+
+    if (!existingGoal) {
+      return createResponse({ error: "Goal not found" }, 404)
     }
 
     await prisma.goal.delete({
       where: { id: goalId },
     })
 
-    return NextResponse.json({ success: true })
+    return createResponse({ success: true })
   } catch (error) {
     console.error("Error deleting goal:", error)
-    return NextResponse.json(
-      { error: "Failed to delete goal" },
-      { status: 500 }
-    )
+    return createResponse({ error: "Failed to delete goal" }, 500)
   }
 } 

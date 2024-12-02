@@ -461,14 +461,14 @@ export default function DailyMoodPage() {
                         >
                           <div className="space-y-4">
                             <label className="block text-sm font-medium text-slate-700">
-                              Energy Level (1-5)
+                              Energy Level (1-10)
                             </label>
                             <div className="flex justify-between items-center">
                               <Moon className="w-5 h-5 text-slate-400" />
                               <Slider
                                 value={[formData.energy]}
                                 min={1}
-                                max={5}
+                                max={10}
                                 step={1}
                                 onValueChange={(value) => setFormData({ ...formData, energy: value[0] })}
                                 className="mx-4"
