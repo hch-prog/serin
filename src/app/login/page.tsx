@@ -14,7 +14,6 @@ import {
   Heart,
   BarChart,
   Lock,
-  CheckCircle
 } from "lucide-react"
 import { Suspense } from 'react'
 
@@ -141,7 +140,7 @@ function LoginContent() {
                 <Shield className="w-4 h-4" />
                 <span>Secure login</span>
               </div>
-              
+
             </div>
           </motion.div>
 

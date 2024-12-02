@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { authOptions } from "@/lib/authOption"
 
 // Helper function for consistent responses
-const createResponse = (data: any, status = 200) => {
+const createResponse = (data: Record<string, unknown>, status = 200) => {
   return NextResponse.json(data, {
     status,
     headers: {

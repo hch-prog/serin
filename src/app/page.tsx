@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useRef } from "react";
-import { motion, useScroll, useTransform, useInView } from "framer-motion";
+import React from "react";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
@@ -11,16 +11,12 @@ import {
   Brain,
   Star,
   Sparkles,
-  Heart,
   Moon,
   Sun,
   CloudRain,
   Zap,
   CheckCircle,
-  ArrowUpRight,
-  ChevronRight,
   MessageSquare,
-  Settings,
   Lock,
   Users,
 } from "lucide-react";
@@ -45,14 +41,6 @@ const staggerContainer = {
   }
 };
 
-const scaleUp = {
-  hidden: { scale: 0.9, opacity: 0 },
-  visible: { 
-    scale: 1, 
-    opacity: 1,
-    transition: { duration: 0.6 }
-  }
-};
 
 // Hero Section
 const Hero = () => {
@@ -432,7 +420,7 @@ const Features = () => {
             <div className="space-y-6">
               <h3 className="text-2xl font-bold">Advanced AI Analysis</h3>
               <p className="text-slate-600">
-                Our AI doesn't just track your moods - it understands them. Get personalized insights,
+                Our AI doesn&apos;t just track your moods - it understands them. Get personalized insights,
                 pattern recognition, and actionable recommendations based on your journal entries.
               </p>
               <div className="flex flex-wrap gap-4">

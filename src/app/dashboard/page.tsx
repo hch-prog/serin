@@ -178,7 +178,7 @@ const QuickJournalCard = ({ onJournalSubmit }: {
         {/* Content/Notes */}
         <div>
           <label className="block mb-2 font-medium text-slate-700 text-sm">
-            What's on your mind?
+            What&apos;s on your mind?
           </label>
           <textarea
             value={content}
