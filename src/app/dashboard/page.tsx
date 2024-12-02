@@ -411,8 +411,13 @@ interface MoodEntry {
   id: string;
   mood: number;
   activities: string[];
-  createdAt: string;
+  emotions: string[];
+  energy: number;
+  sleep: number;
   notes: string | null;
+  aiInsights: string | null;
+  createdAt: string;
+  userId: string;
 }
 
 const calculateStreak = (entries: MoodEntry[]): number => {
@@ -462,6 +467,22 @@ const calculateMonthlyProgress = (
   return Math.min(Math.round((entriesThisMonth.length / monthlyGoal) * 100), 100);
 };
 
+// First, let's add interfaces for the journal entry type
+interface JournalEntry {
+  id: string;
+  title: string;
+  content: string;
+  mood: string;
+  tags: string[];
+  category: string;
+  createdAt: string;
+  emotions?: string[];
+  energy?: number;
+  sleep?: number;
+  aiInsights?: string | null;
+  userId: string;
+}
+
 const Dashboard = () => {
   const { status } = useSession({
     required: true,
@@ -482,7 +503,7 @@ const Dashboard = () => {
     lastEntryDate: null as Date | null,
   })
 
-  // Add fetchDashboardData function
+  // Then update the fetchDashboardData function with proper types
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true);
@@ -495,26 +516,34 @@ const Dashboard = () => {
       // Fetch journal entries
       const response = await fetch('/api/journal');
       if (!response.ok) throw new Error('Failed to fetch entries');
-      const data = await response.json();
+      const data = await response.json() as JournalEntry[];
       
-      // Filter for mood entries and convert format
-      const moodEntries = data
-        .filter((entry: any) => entry.category === 'Quick Entry')
-        .map((entry: any) => ({
+      // Filter for mood entries and convert format with proper type handling
+      const moodEntries: MoodEntry[] = data
+        .filter((entry: JournalEntry) => entry.category === 'Quick Entry')
+        .map((entry: JournalEntry) => ({
           id: entry.id,
-          mood: parseInt(entry.mood),
-          activities: entry.tags,
+          mood: parseInt(entry.mood || '0'),
+          activities: entry.tags || [],
+          emotions: entry.emotions || [],
+          energy: entry.energy || 0,
+          sleep: entry.sleep || 0,
+          notes: entry.content,
+          aiInsights: entry.aiInsights || null,
           createdAt: entry.createdAt,
-          notes: entry.content
+          userId: entry.userId,
         }));
 
       setMoodEntries(moodEntries);
 
-      // Calculate stats
+      // Calculate stats with proper type handling
       if (moodEntries.length > 0) {
         const streak = calculateStreak(moodEntries);
         const monthlyProgress = calculateMonthlyProgress(moodEntries, settingsData.monthlyGoal);
-        const averageMood = moodEntries.reduce((acc, curr) => acc + curr.mood, 0) / moodEntries.length;
+        const averageMood = moodEntries.reduce(
+          (acc: number, curr: MoodEntry) => acc + curr.mood,
+          0
+        ) / moodEntries.length;
         const lastEntry = new Date(moodEntries[0].createdAt);
 
         setStats({

@@ -69,7 +69,7 @@ const priorities = ["High", "Medium", "Low"]
 const statuses = ["In Progress", "Completed", "On Hold"]
 
 export default function GoalsPage() {
-    useSession({
+    const { status } = useSession({
         required: true,
         onUnauthenticated() {
             redirect('/login')
@@ -94,38 +94,91 @@ export default function GoalsPage() {
     })
 
     const fetchGoals = async () => {
+        if (status !== 'authenticated') return;
+        
         try {
-            const params = new URLSearchParams()
-            if (filter.category) params.append('category', filter.category)
-            if (filter.status) params.append('status', filter.status)
+            setIsLoading(true);
+            const params = new URLSearchParams();
+            if (filter.category) params.append('category', filter.category);
+            if (filter.status) params.append('status', filter.status);
 
-            const response = await fetch(`/api/goals?${params}`)
-            if (!response.ok) throw new Error('Failed to fetch goals')
-            const data = await response.json()
-            setGoals(data)
+            const response = await fetch(`/api/goals?${params.toString()}`);
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to fetch goals');
+            }
+
+            const jsonData = await response.json();
+            
+            if (!jsonData || !jsonData.data) {
+                throw new Error('Invalid response format');
+            }
+
+            setGoals(Array.isArray(jsonData.data) ? jsonData.data : []);
         } catch (error) {
-            console.error('Error fetching goals:', error)
+            console.error('Error fetching goals:', error);
+            setGoals([]);
         } finally {
-            setIsLoading(false)
+            setIsLoading(false);
         }
-    }
+    };
 
     useEffect(() => {
-        fetchGoals()
-    }, [filter, fetchGoals])
+        fetchGoals();
+    }, [filter, status]);
 
     const handleCreateGoal = async () => {
         try {
+            if (!newGoal.title.trim()) {
+                throw new Error('Title is required');
+            }
+
+            setIsLoading(true);
+
+            // Log the request payload for debugging
+            const payload = {
+                title: newGoal.title,
+                description: newGoal.description,
+                category: newGoal.category,
+                priority: newGoal.priority,
+                dueDate: newGoal.dueDate?.toISOString(),
+                milestones: newGoal.milestones.map(m => ({
+                    title: m.title,
+                    dueDate: m.dueDate?.toISOString() || null,
+                })),
+            };
+
+            console.log('Creating goal with payload:', payload);
+
             const response = await fetch('/api/goals', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newGoal),
-            })
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(payload),
+            });
 
-            if (!response.ok) throw new Error('Failed to create goal')
+            // Log the response status and headers for debugging
+            console.log('Response status:', response.status);
+            console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
-            await fetchGoals()
-            setIsNewGoalOpen(false)
+            // Check if response is empty
+            const text = await response.text();
+            if (!text) {
+                throw new Error('Empty response from server');
+            }
+
+            // Parse the JSON response
+            const jsonData = JSON.parse(text);
+            console.log('Response data:', jsonData);
+
+            if (!response.ok) {
+                throw new Error(jsonData.error || 'Failed to create goal');
+            }
+
+            // Reset form
             setNewGoal({
                 title: "",
                 description: "",
@@ -133,11 +186,19 @@ export default function GoalsPage() {
                 priority: "Medium",
                 dueDate: undefined,
                 milestones: [],
-            })
+            });
+
+            // Close modal and refresh goals
+            setIsNewGoalOpen(false);
+            await fetchGoals();
+
         } catch (error) {
-            console.error('Error creating goal:', error)
+            console.error('Error creating goal:', error);
+            alert(error instanceof Error ? error.message : 'Failed to create goal');
+        } finally {
+            setIsLoading(false);
         }
-    }
+    };
 
     const handleUpdateGoal = async (goalId: string, updates: Partial<Goal>) => {
         try {
@@ -145,38 +206,44 @@ export default function GoalsPage() {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updates),
-            })
+            });
 
-            if (!response.ok) throw new Error('Failed to update goal')
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to update goal');
+            }
 
-            await fetchGoals()
+            await fetchGoals();
         } catch (error) {
-            console.error('Error updating goal:', error)
+            console.error('Error updating goal:', error);
         }
-    }
+    };
 
     const handleDeleteGoal = async (goalId: string) => {
-        if (!confirm('Are you sure you want to delete this goal?')) return
+        if (!confirm('Are you sure you want to delete this goal?')) return;
 
         try {
             const response = await fetch(`/api/goals?id=${goalId}`, {
                 method: 'DELETE',
-            })
+            });
 
-            if (!response.ok) throw new Error('Failed to delete goal')
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to delete goal');
+            }
 
-            await fetchGoals()
+            await fetchGoals();
         } catch (error) {
-            console.error('Error deleting goal:', error)
+            console.error('Error deleting goal:', error);
         }
-    }
+    };
 
-    if (isLoading) {
+    if (status === "loading" || isLoading) {
         return (
             <div className="h-screen flex items-center justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
             </div>
-        )
+        );
     }
 
     return (
