@@ -339,17 +339,20 @@ export default function DailyMoodPage() {
                     if (todayEntry) {
                       setIsEditMode(true);
                       setFormData({
-                        mood: todayEntry.mood,
-                        emotions: todayEntry.emotions,
-                        activities: todayEntry.activities,
-                        energy: todayEntry.energy,
-                        sleep: todayEntry.sleep,
+                        mood: todayEntry.mood || 5,
+                        emotions: todayEntry.emotions || [],
+                        activities: todayEntry.activities || [], 
+                        energy: todayEntry.energy || 5,
+                        sleep: todayEntry.sleep || 7,
                         notes: todayEntry.notes || "",
                       });
                       setShowInsights(false);
                       setStep(1);
+                      // Reset hasSubmittedToday since we're editing
+                      setHasSubmittedToday(false);
                     }
                   }}
+                  variant="secondary"
                   className="bg-green-600 hover:bg-green-700 text-white font-medium px-6"
                 >
                   <Pencil className="w-4 h-4 mr-2" />
