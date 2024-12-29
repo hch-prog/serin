@@ -1,11 +1,13 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+import { NextConfig } from 'next'
+
+const nextConfig: NextConfig = {
   images: {
     domains: [
-      "lh3.googleusercontent.com",
-      "avatars.githubusercontent.com"
+      'images.unsplash.com',  
+      'lh3.googleusercontent.com',  
+      'avatars.githubusercontent.com', 
     ],
   },
 }
 
-module.exports = nextConfig
+export default nextConfig
