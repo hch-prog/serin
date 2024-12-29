@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth"
 import { prisma } from "@/lib/prisma"
 import { authOptions } from "@/lib/authOption"
 
-// Helper function for consistent responses
 const createResponse = (data: Record<string, unknown>, status = 200) => {
   return NextResponse.json(data, {
     status,
@@ -102,7 +101,6 @@ export async function PUT(req: Request) {
       return createResponse({ error: "Goal ID required" }, 400)
     }
 
-    // Verify ownership
     const existingGoal = await prisma.goal.findFirst({
       where: {
         id: goalId,
@@ -153,7 +151,6 @@ export async function DELETE(req: Request) {
       return createResponse({ error: "Goal ID required" }, 400)
     }
 
-    // Verify ownership
     const existingGoal = await prisma.goal.findFirst({
       where: {
         id: goalId,

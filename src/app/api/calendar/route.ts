@@ -6,22 +6,19 @@ import { startOfMonth, endOfMonth } from "date-fns"
 
 export async function GET(req: Request) {
   try {
-    // Check authentication
+    
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Parse query parameters
     const url = new URL(req.url)
     const year = parseInt(url.searchParams.get('year') || new Date().getFullYear().toString())
     const month = parseInt(url.searchParams.get('month') || new Date().getMonth().toString())
 
-    // Calculate start and end dates using date-fns
     const startDate = startOfMonth(new Date(year, month))
     const endDate = endOfMonth(new Date(year, month))
 
-    // Query database
     const entries = await prisma.moodEntry.findMany({
       where: {
         userId: session.user.id,
@@ -42,7 +39,7 @@ export async function GET(req: Request) {
       },
     })
 
-    // Transform the data for frontend
+   
     const transformedEntries = entries.map(entry => ({
       id: entry.id,
       date: entry.createdAt.toISOString(),

@@ -53,10 +53,8 @@ export async function POST(req: Request) {
       aiInsights = result.response.text()
     } catch (error) {
       console.error("AI generation error:", error)
-      // Continue without AI insights if generation fails
     }
 
-    // Create the mood entry with the specific date
     const entry = await prisma.moodEntry.create({
       data: {
         mood,
@@ -99,7 +97,7 @@ export async function GET() {
       orderBy: {
         createdAt: "desc",
       },
-      take: 30, // Limit to last 30 entries
+      take: 30, 
       select: {
         id: true,
         mood: true,
@@ -133,7 +131,7 @@ export async function PUT(req: Request) {
     const body = await req.json()
     const { date, mood, emotions, activities, energy, sleep, notes } = body
 
-    // Find existing entry for the date
+   
     const existingEntry = await prisma.moodEntry.findFirst({
       where: {
         userId: session.user.id,
@@ -148,7 +146,6 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Entry not found" }, { status: 404 })
     }
 
-    // Generate new AI insights for the updated entry
     let aiInsights = null
     try {
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "")
@@ -175,7 +172,7 @@ export async function PUT(req: Request) {
       console.error("AI generation error:", error)
     }
 
-    // Update the entry
+
     const updatedEntry = await prisma.moodEntry.update({
       where: { id: existingEntry.id },
       data: {

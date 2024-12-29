@@ -15,7 +15,7 @@ export async function GET() {
     })
 
     if (!settings) {
-      // Create default settings if none exist
+    
       settings = await prisma.userSettings.create({
         data: {
           userId: session.user.id,

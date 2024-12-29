@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { authOptions } from "@/lib/authOption"
 import { Prisma } from '@prisma/client'
 
-// GET - Fetch journal entries
+
 export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions)
@@ -17,7 +17,6 @@ export async function GET(req: Request) {
     const search = url.searchParams.get('search')
     const sort = url.searchParams.get('sort') || 'newest'
 
-    // Build where clause
     const where: Prisma.JournalEntryWhereInput = {
       userId: session.user.id,
       ...(category && { category }),
@@ -30,7 +29,6 @@ export async function GET(req: Request) {
       })
     }
 
-    // Build order by clause
     const orderBy = {
       [sort === 'oldest' ? 'createdAt' : 'updatedAt']: sort === 'oldest' ? 'asc' : 'desc'
     }
@@ -51,7 +49,6 @@ export async function GET(req: Request) {
   }
 }
 
-// POST - Create new journal entry
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions)
@@ -62,7 +59,6 @@ export async function POST(req: Request) {
     const body = await req.json()
     const { title, content, mood, tags, category, isFavorite, weather } = body
 
-    // Validate required fields
     if (!title?.trim()) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 })
     }
@@ -70,7 +66,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Content is required" }, { status: 400 })
     }
 
-    // Create the entry
     const entry = await prisma.journalEntry.create({
       data: {
         title: title.trim(),
@@ -91,14 +86,13 @@ export async function POST(req: Request) {
 
   } catch (error) {
     console.error("Error creating journal entry:", error)
-    return NextResponse.json({ 
+    return NextResponse.json({
       error: "Failed to create entry",
       details: error instanceof Error ? error.message : "Unknown error"
     }, { status: 500 })
   }
 }
 
-// PUT - Update journal entry
 export async function PUT(req: Request) {
   try {
     const session = await getServerSession(authOptions)
@@ -115,7 +109,6 @@ export async function PUT(req: Request) {
     const body = await req.json()
     const { title, content, mood, tags, category, isFavorite, imageUrl } = body
 
-    // Verify ownership
     const existingEntry = await prisma.journalEntry.findFirst({
       where: {
         id: entryId,
@@ -150,7 +143,6 @@ export async function PUT(req: Request) {
   }
 }
 
-// DELETE - Delete journal entry
 export async function DELETE(req: Request) {
   try {
     const session = await getServerSession(authOptions)
@@ -164,7 +156,6 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Entry ID required" }, { status: 400 })
     }
 
-    // Verify ownership before deletion
     const existingEntry = await prisma.journalEntry.findFirst({
       where: {
         id: entryId,
