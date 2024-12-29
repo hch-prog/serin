@@ -45,16 +45,16 @@ import { Sidebar } from "@/components/common/sidebar";
 import { startOfMonth, endOfMonth, isToday, isSameDay, format } from 'date-fns'
 import { Input } from "@/components/ui/input";
 
-// Enhanced mood tracking with timestamps and notes
 
-const QuickJournalCard = ({ onJournalSubmit }: { 
-  onJournalSubmit: (data: { 
-    title: string, 
-    content: string, 
-    mood: number, 
-    tags: string[], 
-    category: string 
-  }) => Promise<void> 
+
+const QuickJournalCard = ({ onJournalSubmit }: {
+  onJournalSubmit: (data: {
+    title: string,
+    content: string,
+    mood: number,
+    tags: string[],
+    category: string
+  }) => Promise<void>
 }) => {
   const [selectedMood, setSelectedMood] = useState<number | null>(null);
   const [title, setTitle] = useState<string>("");
@@ -140,7 +140,6 @@ const QuickJournalCard = ({ onJournalSubmit }: {
         <CardDescription>Capture your thoughts and feelings</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Title Input */}
         <div>
           <label className="block mb-2 font-medium text-slate-700 text-sm">
             Title
@@ -153,7 +152,6 @@ const QuickJournalCard = ({ onJournalSubmit }: {
           />
         </div>
 
-        {/* Mood Selection */}
         <div>
           <label className="block mb-2 font-medium text-slate-700 text-sm">
             How are you feeling?
@@ -175,7 +173,6 @@ const QuickJournalCard = ({ onJournalSubmit }: {
           </div>
         </div>
 
-        {/* Content/Notes */}
         <div>
           <label className="block mb-2 font-medium text-slate-700 text-sm">
             What&apos;s on your mind?
@@ -189,7 +186,7 @@ const QuickJournalCard = ({ onJournalSubmit }: {
           />
         </div>
 
-        {/* Tags */}
+        
         <div>
           <label className="block mb-2 font-medium text-slate-700 text-sm">
             Add Tags
@@ -239,17 +236,45 @@ const QuickJournalCard = ({ onJournalSubmit }: {
 
 const MoodInsightsCard = ({ moodData }: { moodData: MoodEntry[] }) => {
   const getAverageMood = () => {
-    const sum = moodData.reduce((acc: number, curr: { mood: number }) => acc + curr.mood, 0);
-    return (sum / moodData.length).toFixed(1);
+    if (!moodData || moodData.length === 0) return "0.0";
+    
+    const validMoods = moodData.filter(entry => 
+      entry.mood !== null && entry.mood !== undefined && !isNaN(Number(entry.mood))
+    );
+    
+    if (validMoods.length === 0) return "0.0";
+    
+    const sum = validMoods.reduce((acc, curr) => {
+      const moodValue = typeof curr.mood === 'string' ? 
+        getMoodValue(curr.mood) : 
+        Number(curr.mood);
+      return acc + moodValue;
+    }, 0);
+    
+    return (sum / validMoods.length).toFixed(1);
   };
 
   const getMostCommonActivity = () => {
-    const activities = moodData.flatMap((entry) => entry.activities);
+    if (!moodData || moodData.length === 0) return {};
+    
+    const activities = moodData
+      .filter(entry => Array.isArray(entry.activities))
+      .flatMap(entry => entry.activities);
+    
     return activities.reduce<Record<string, number>>((acc, curr) => {
-      acc[curr] = (acc[curr] || 0) + 1;
+      if (curr) {
+        acc[curr] = (acc[curr] || 0) + 1;
+      }
       return acc;
     }, {});
   };
+
+  const averageMood = getAverageMood();
+  const commonActivities = getMostCommonActivity();
+  const topActivities = Object.entries(commonActivities)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 2)
+    .map(([activity]) => activity);
 
   return (
     <Card>
@@ -260,14 +285,16 @@ const MoodInsightsCard = ({ moodData }: { moodData: MoodEntry[] }) => {
       <CardContent className="space-y-4">
         <div className="bg-indigo-50 p-4 rounded-lg">
           <p className="text-indigo-700">
-            Your average mood this week is {getAverageMood()}/10. Activities
-            like
-            {Object.entries(getMostCommonActivity())
-              .sort(([, a], [, b]) => b - a)
-              .slice(0, 2)
-              .map(([activity]) => ` ${activity}`)
-              .join(" and ")}
-            seem to boost your mood the most.
+            {moodData.length === 0 ? (
+              "Start tracking your moods to see insights!"
+            ) : (
+              <>
+                Your average mood this week is {averageMood}/5.
+                {topActivities.length > 0 && (
+                  <> Activities like {topActivities.join(" and ")} seem to boost your mood the most.</>
+                )}
+              </>
+            )}
           </p>
         </div>
 
@@ -278,29 +305,33 @@ const MoodInsightsCard = ({ moodData }: { moodData: MoodEntry[] }) => {
               className="flex items-start gap-3 bg-slate-50 p-3 rounded-lg"
             >
               <div className="bg-white p-2 rounded-full">
-                {entry.mood >= 7 ? (
-                  <Smile className="w-4 h-4 text-green-500" />
-                ) : entry.mood >= 5 ? (
-                  <Meh className="w-4 h-4 text-yellow-500" />
+                {typeof entry.mood === 'string' ? (
+                  <span className="text-xl">{entry.mood}</span>
                 ) : (
-                  <Frown className="w-4 h-4 text-red-500" />
+                  getMoodIcon(Number(entry.mood))
                 )}
               </div>
               <div>
                 <p className="font-medium text-slate-700 text-sm">
                   {format(new Date(entry.createdAt), 'MMM d, yyyy')}
                 </p>
-                <p className="text-slate-600 text-sm">Mood: {entry.mood}/10</p>
-                <div className="flex gap-2 mt-2">
-                  {entry.activities.map((activity, actIdx) => (
-                    <span
-                      key={actIdx}
-                      className="bg-white px-2 py-1 rounded-full font-medium text-slate-600 text-xs"
-                    >
-                      {activity}
-                    </span>
-                  ))}
-                </div>
+                <p className="text-slate-600 text-sm">
+                  Mood: {typeof entry.mood === 'string' ? 
+                    `${getMoodValue(entry.mood)}/5` : 
+                    `${entry.mood}/5`}
+                </p>
+                {entry.activities && entry.activities.length > 0 && (
+                  <div className="flex gap-2 mt-2">
+                    {entry.activities.map((activity, actIdx) => (
+                      <span
+                        key={actIdx}
+                        className="bg-white px-2 py-1 rounded-full font-medium text-slate-600 text-xs"
+                      >
+                        {activity}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -309,6 +340,19 @@ const MoodInsightsCard = ({ moodData }: { moodData: MoodEntry[] }) => {
     </Card>
   );
 };
+
+// Helper function to get mood icon component
+const getMoodIcon = (moodValue: number) => {
+  if (moodValue >= 4) {
+    return <Smile className="w-4 h-4 text-green-500" />;
+  } else if (moodValue >= 3) {
+    return <Meh className="w-4 h-4 text-yellow-500" />;
+  } else {
+    return <Frown className="w-4 h-4 text-red-500" />;
+  }
+};
+
+
 
 interface ChartMouseEvent {
   activeTooltipIndex?: number;
@@ -339,7 +383,6 @@ const MoodTrendChart = ({ data }: { data: { day: string; mood: number }[] }) => 
     );
   };
 
-  // Sort data chronologically
   const sortedData = [...data].sort((a, b) =>
     new Date(a.day).getTime() - new Date(b.day).getTime()
   );
@@ -355,7 +398,7 @@ const MoodTrendChart = ({ data }: { data: { day: string; mood: number }[] }) => 
         <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
-              data={sortedData}  // Use sortedData here
+              data={sortedData}  
               margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
               onMouseMove={(e: ChartMouseEvent) => {
                 if (e.activeTooltipIndex !== undefined && e.activePayload?.[0]) {
@@ -409,13 +452,13 @@ interface UserSettings {
 
 interface MoodEntry {
   id: string;
-  mood: number;
+  mood: string | number;
   activities: string[];
-  emotions: string[];
-  energy: number;
-  sleep: number;
-  notes: string | null;
-  aiInsights: string | null;
+  emotions?: string[];
+  energy?: number;
+  sleep?: number;
+  notes?: string;
+  aiInsights?: string | null;
   createdAt: string;
   userId: string;
 }
@@ -467,7 +510,7 @@ const calculateMonthlyProgress = (
   return Math.min(Math.round((entriesThisMonth.length / monthlyGoal) * 100), 100);
 };
 
-// First, let's add interfaces for the journal entry type
+
 interface JournalEntry {
   id: string;
   title: string;
@@ -482,6 +525,34 @@ interface JournalEntry {
   aiInsights?: string | null;
   userId: string;
 }
+
+const getMoodValue = (mood: string | null): number => {
+  const moodMap: { [key: string]: number } = {
+    "😊": 5,
+    "😌": 4,
+    "😐": 3,
+    "😔": 2,
+    "😣": 1
+  };
+  return mood ? moodMap[mood] || 3 : 3; 
+};
+
+const calculateAverageMood = (entries: MoodEntry[]): number => {
+  if (entries.length === 0) return 0;
+  const sum = entries.reduce((acc, entry) => acc + Number(entry.mood), 0);
+  return sum / entries.length;
+};
+
+const getMoodEmoji = (moodValue: number): string => {
+  const moodMap: { [key: number]: string } = {
+    5: "😊",
+    4: "😌",
+    3: "😐",
+    2: "😔",
+    1: "😣"
+  };
+  return moodMap[moodValue] || "😐";
+};
 
 const Dashboard = () => {
   const { status } = useSession({
@@ -503,53 +574,44 @@ const Dashboard = () => {
     lastEntryDate: null as Date | null,
   })
 
-  // Then update the fetchDashboardData function with proper types
+ 
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true);
 
-      // Fetch user settings
       const settingsResponse = await fetch('/api/settings');
       const settingsData = await settingsResponse.json();
       setSettings(settingsData);
 
-      // Fetch journal entries
       const response = await fetch('/api/journal');
       if (!response.ok) throw new Error('Failed to fetch entries');
-      const data = await response.json() as JournalEntry[];
-      
-      // Filter for mood entries and convert format with proper type handling
-      const moodEntries: MoodEntry[] = data
-        .filter((entry: JournalEntry) => entry.category === 'Quick Entry')
-        .map((entry: JournalEntry) => ({
-          id: entry.id,
-          mood: parseInt(entry.mood || '0'),
-          activities: entry.tags || [],
-          emotions: entry.emotions || [],
-          energy: entry.energy || 0,
-          sleep: entry.sleep || 0,
-          notes: entry.content,
-          aiInsights: entry.aiInsights || null,
-          createdAt: entry.createdAt,
-          userId: entry.userId,
-        }));
+      const data = await response.json();
 
-      setMoodEntries(moodEntries);
+      const transformedEntries: MoodEntry[] = data.map((entry: JournalEntry) => ({
+        id: entry.id,
+        mood: getMoodValue(entry.mood), 
+        activities: entry.tags || [],
+        emotions: [],
+        energy: 0, 
+        sleep: 0, 
+        notes: entry.content,
+        aiInsights: null,
+        createdAt: entry.createdAt,
+        userId: entry.userId || ''
+      }));
 
-      // Calculate stats with proper type handling
-      if (moodEntries.length > 0) {
-        const streak = calculateStreak(moodEntries);
-        const monthlyProgress = calculateMonthlyProgress(moodEntries, settingsData.monthlyGoal);
-        const averageMood = moodEntries.reduce(
-          (acc: number, curr: MoodEntry) => acc + curr.mood,
-          0
-        ) / moodEntries.length;
-        const lastEntry = new Date(moodEntries[0].createdAt);
+      setMoodEntries(transformedEntries);
+
+      if (transformedEntries.length > 0) {
+        const streak = calculateStreak(transformedEntries);
+        const monthlyProgress = calculateMonthlyProgress(transformedEntries, settingsData.monthlyGoal);
+        const averageMood = calculateAverageMood(transformedEntries);
+        const lastEntry = new Date(transformedEntries[0].createdAt);
 
         setStats({
           currentStreak: streak,
           monthlyProgress,
-          totalEntries: moodEntries.length,
+          totalEntries: transformedEntries.length,
           averageMood: Number(averageMood.toFixed(1)),
           lastEntryDate: lastEntry,
         });
@@ -561,14 +623,12 @@ const Dashboard = () => {
     }
   };
 
-  // Use fetchDashboardData in useEffect
   useEffect(() => {
     if (status === 'authenticated') {
       fetchDashboardData();
     }
   }, [status]);
 
-  // Show loading state
   if (status === "loading" || isLoading) {
     return (
       <div className="h-screen flex items-center justify-center">
@@ -580,7 +640,6 @@ const Dashboard = () => {
     )
   }
 
-  // Update the stats cards section
   const statsCards = [
     {
       label: "Current Streak",
@@ -628,7 +687,6 @@ const Dashboard = () => {
             </p>
           </div>
 
-          {/* Stats Grid */}
           <div className="gap-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
             {statsCards.map((stat, index) => (
               <Card key={index}>
@@ -650,8 +708,7 @@ const Dashboard = () => {
             ))}
           </div>
 
-          {/* Quick Mood Entry and Insights */}
-          <div className="gap-8 grid grid-cols-1 lg:grid-cols-2">
+         <div className="gap-8 grid grid-cols-1 lg:grid-cols-2">
             <QuickJournalCard onJournalSubmit={async (data) => {
               try {
                 const response = await fetch('/api/journal', {
@@ -660,7 +717,7 @@ const Dashboard = () => {
                   body: JSON.stringify({
                     title: data.title,
                     content: data.content,
-                    mood: data.mood.toString(),
+                    mood: getMoodEmoji(data.mood), 
                     tags: data.tags,
                     category: data.category,
                     isFavorite: false,
@@ -668,9 +725,7 @@ const Dashboard = () => {
                 });
 
                 if (!response.ok) throw new Error('Failed to save journal entry');
-
-                // Now fetchDashboardData will be available
-                await fetchDashboardData();
+                await fetchDashboardData(); 
               } catch (error) {
                 console.error('Error saving journal entry:', error);
               }
@@ -678,10 +733,10 @@ const Dashboard = () => {
             <MoodInsightsCard moodData={moodEntries} />
           </div>
 
-          {/* Mood Trend Chart */}
+          
           <MoodTrendChart data={moodEntries.map(entry => ({
             day: format(new Date(entry.createdAt), 'MMM d'),
-            mood: entry.mood,
+            mood: Number(entry.mood), // Convert mood to number to satisfy type requirement
           }))} />
         </div>
       </main>
